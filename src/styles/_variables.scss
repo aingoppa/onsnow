@@ -1,0 +1,22 @@
+/* SCSS variables — colors, spacing, breakpoints.
+   Import this file in any .module.scss with: @use '../../../styles/variables' as *; */
+
+// Colors
+$color-primary: #1a6fc4;   // main blue — links, buttons
+$color-text:    #1a1a1a;   // default body text
+$color-bg:      #ffffff;   // page background
+$color-muted:   #6b7280;   // secondary / placeholder text
+$color-border:  #e5e7eb;   // dividers, input borders
+
+// Spacing scale (use multiples of 4px)
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-6: 24px;
+$space-8: 32px;
+
+// Breakpoints
+$bp-sm: 640px;
+$bp-md: 768px;
+$bp-lg: 1024px;

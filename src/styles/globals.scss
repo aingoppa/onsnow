@@ -1,0 +1,28 @@
+@use 'variables' as *;
+
+/* Global resets and base styles */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: $color-text;
+  background-color: $color-bg;
+}
+
+a {
+  color: $color-primary;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
