@@ -1,6 +1,6 @@
 # onsnow
 
-A SaaS web application for snow sports and ski resort enthusiasts — covering resort conditions, trail maps, trip planning, and related features.
+A SaaS web application that connects snow sports enthusiasts — skiers, snowboarders, snowshoers, and more — so they can find partners to ride with, coordinate carpooling, and combine purchases like group lift ticket discounts.
 
 ## Tech Stack
 
