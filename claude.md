@@ -7,7 +7,8 @@ A SaaS web application that connects snow sports enthusiasts — skiers, snowboa
 - **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript (strict mode)
 - **Styling**: SCSS with CSS Modules (`.module.scss` per component)
-- **Database**: PostgreSQL via Prisma ORM
+- **Database**: Supabase (PostgreSQL) via `@supabase/supabase-js` — no Prisma or separate ORM
+- **Auth**: Supabase Auth — email/password and Google OAuth (OIDC)
 - **API**: Next.js Route Handlers (`src/app/api/`)
 
 ## Directory Structure
@@ -21,11 +22,13 @@ src/
 ├── components/             # Reusable React components
 │   └── ui/                 # Generic UI primitives
 ├── lib/                    # Shared utilities and helpers
-│   ├── db/                 # Prisma client and query helpers
+│   ├── supabase/           # Supabase client instances (server + browser)
 │   └── types/              # Shared TypeScript types/interfaces
 └── styles/                 # Global styles
     ├── globals.scss         # Global resets and base styles
     └── _variables.scss      # SCSS variables and mixins
+supabase/
+└── migrations/             # SQL migration files (schema changes go here)
 ```
 
 ## Dev Commands
@@ -45,6 +48,30 @@ npm run typecheck # Run tsc --noEmit
 - **Data fetching**: Fetch in Server Components or Route Handlers — not in client components.
 - **API routes**: All Route Handlers live in `src/app/api/`. Return `Response` or use `NextResponse`.
 - **Environment variables**: Use `NEXT_PUBLIC_` prefix only for variables safe to expose to the browser.
+
+## Supabase
+
+### Database
+- Query data using the `@supabase/supabase-js` client directly — no Prisma or ORM layer.
+- **Client files**: `src/lib/supabase/server.ts` (Server Components / Route Handlers) and `src/lib/supabase/browser.ts` (client components).
+- Use the **server client** for all data access in Server Components and API routes — it runs with elevated privileges via the service role key.
+- Use the **browser client** only for auth state listeners in client components.
+- Schema changes go in `supabase/migrations/` as SQL files, or via the Supabase dashboard SQL editor.
+- Supabase can auto-generate TypeScript types from your schema: `npx supabase gen types typescript`.
+
+### Auth
+- Supports **email/password** signup and **Google OAuth (OIDC)** — both configured in the Supabase dashboard under Authentication → Providers.
+- Google sign-in requires a Google Cloud OAuth 2.0 credential; set the Supabase callback URL as an authorized redirect URI in Google Cloud Console.
+- On sign-in, Supabase stores the user in `auth.users` and sets a session cookie automatically.
+- Link a `profiles` table to `auth.users.id` for app-specific data (display name, skill level, avatar, etc.).
+
+### Environment variables
+Add to `.env.local` and Vercel project settings:
+```
+NEXT_PUBLIC_SUPABASE_URL=        # project URL — safe to expose to browser
+NEXT_PUBLIC_SUPABASE_ANON_KEY=   # public anon key — safe to expose to browser
+SUPABASE_SERVICE_ROLE_KEY=       # secret — server-side only, never use NEXT_PUBLIC_
+```
 
 ## Styling
 
@@ -73,6 +100,14 @@ npm run typecheck # Run tsc --noEmit
 - Avoid: complex build-time magic, obscure DSLs, or large UI frameworks. Keep the stack minimal to accelerate learning and maintenance.
 
 - Styling guidance: apply styles only when required — functionality first. It's acceptable for the UI to be plain or "ugly" during development so long as features work; prefer small, explicit styles over extensive design systems.
+
+## Claude behavior
+
+- **Ask before acting**: When a request is ambiguous or could be interpreted multiple ways, ask a clarifying question before writing any code or making changes.
+- **Explain first**: Before starting a non-trivial task, briefly describe what you are about to do and why — give the user a chance to redirect.
+- **No surprises**: Do not make changes beyond what was explicitly asked. If you notice something related that could also be improved, mention it and ask before touching it.
+- **Small steps**: Prefer making one focused change at a time rather than large sweeping edits. Confirm direction after each meaningful step if the task is complex.
+- **When in doubt, stop and ask** — never guess at intent on decisions that are hard to reverse (schema changes, deleting files, refactoring structure).
 
 ## Security & privacy reminders
 
