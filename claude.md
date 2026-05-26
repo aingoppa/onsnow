@@ -101,6 +101,60 @@ SUPABASE_SERVICE_ROLE_KEY=       # secret — server-side only, never use NEXT_P
 
 - Styling guidance: apply styles only when required — functionality first. It's acceptable for the UI to be plain or "ugly" during development so long as features work; prefer small, explicit styles over extensive design systems.
 
+## Core features
+
+### Play together (beacon)
+The primary product feature. A user triggers a beacon at a ski resort lift or facility. Matched users are notified with the beacon creator's profile, location, and a custom message (e.g. "I'm wearing a blue jacket, meet me at Chair 6 until 11am").
+
+**Matching criteria (MVP):** same resort + same day + overlapping sport type + compatible skill level + preferred lift
+
+**Out of scope for now:** "Trip together" (carpooling coordination), GPS/pin location, trail preferences
+
+#### Beacon flow
+1. User selects resort, landmark (lift or facility), date/time window, and writes a message
+2. System finds users with matching criteria who are at the same resort that day
+3. Matched users receive a notification with the beacon details
+4. Beacon auto-expires at the user-specified time
+
+### Profile skill level
+- Add `skill_level` (enum: Beginner, Intermediate, Advanced, Expert) to the `profiles` table
+- Used as a matching criterion for the beacon feature
+- **Status: not yet implemented — next task**
+
+### Resort & landmark data
+
+#### Schema
+
+**resorts table**
+| Field | Type | Notes |
+|---|---|---|
+| id | uuid | |
+| name | text | e.g. "Whistler Blackcomb" |
+| state | text | State or province |
+| country | text | US or Canada |
+| osm_id | bigint | OSM relation ID |
+| center_lat | float | Resort center point |
+| center_lon | float | Resort center point |
+| boundary | jsonb | GeoJSON polygon from OSM |
+| created_at | timestamptz | |
+
+**landmarks table**
+| Field | Type | Notes |
+|---|---|---|
+| id | uuid | |
+| resort_id | uuid | FK → resorts |
+| name | text | e.g. "Chair 6", "Day Lodge" |
+| type | enum | `lift` or `facility` |
+| subtype | text | `chair_lift`, `gondola`, `drag_lift`, `magic_carpet`, `mixed_lift`, `lodge`, `ticket_booth`, `rental_shop`, `restroom` |
+| osm_id | bigint | OSM element ID |
+| created_at | timestamptz | |
+
+#### OSM seeding
+- Data source: **OpenStreetMap** via the **Overpass API** (free, no API key)
+- OSM tags used: `aerialway=*` for lifts, `amenity=*` / `tourism=*` for facilities
+- A one-time Node.js seeding script queries Overpass for each resort and imports into Supabase
+- **Status: not yet implemented — next task after skill_level**
+
 ## Testing
 
 Testing is not yet set up — this section documents the agreed approach for when we add it.
