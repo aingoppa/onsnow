@@ -7,6 +7,7 @@
 
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase/server'
+import { SignOutButton } from '@/components/ui/SignOutButton'
 
 export default async function HomePage() {
   const supabase = await createServerClient()
@@ -18,7 +19,10 @@ export default async function HomePage() {
       <p>Find snow sports partners, coordinate carpools, and get group lift ticket discounts.</p>
 
       {user ? (
-        <p>Welcome back, {user.email}</p>
+        <div>
+          <p>Welcome back, {user.email}</p>
+          <SignOutButton />
+        </div>
       ) : (
         <div>
           <Link href="/sign-in">Sign in</Link>
