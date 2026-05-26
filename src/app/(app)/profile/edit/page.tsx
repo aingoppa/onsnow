@@ -30,6 +30,7 @@ export default async function EditProfilePage() {
   return (
     <main>
       <h1>{profile ? 'Edit Profile' : 'Complete your profile'}</h1>
+      <span>{(await supabase.auth.getUser()).data.user?.email}</span>
       {/* Pass existing profile (or null for new users) to the form */}
       <EditProfileForm profile={profile} />
     </main>

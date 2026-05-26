@@ -37,6 +37,7 @@ export default async function ProfilePage() {
     <main>
       <h1>My Profile</h1>
 
+      <p><strong>Account:</strong> {(await supabase.auth.getUser()).data.user?.email}</p>
       <p><strong>Name:</strong> {profile.name}</p>
       <p><strong>Birth year:</strong> {profile.birth_year}</p>
 

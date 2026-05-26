@@ -101,6 +101,33 @@ SUPABASE_SERVICE_ROLE_KEY=       # secret — server-side only, never use NEXT_P
 
 - Styling guidance: apply styles only when required — functionality first. It's acceptable for the UI to be plain or "ugly" during development so long as features work; prefer small, explicit styles over extensive design systems.
 
+## Testing
+
+Testing is not yet set up — this section documents the agreed approach for when we add it.
+
+### Framework
+- **Vitest** — unit and integration tests (preferred over Jest for this stack)
+- **@testing-library/react** — React component tests in isolation
+
+### What to test
+- **Unit tests**: input validation logic, data mapping, utility functions
+- **Integration tests**: Supabase queries (insert, upsert, RLS enforcement)
+- **Skip for now**: end-to-end browser tests (Playwright) — too heavy for early stage
+
+### Integration test strategy
+- Use a separate **Supabase test project** (free tier) so tests never touch real user data
+- Add test project credentials to `.env.test.local` (gitignored)
+
+### What NOT to test
+- Supabase Auth itself — it's a third-party service, not our code
+- Next.js routing and middleware — framework responsibility
+
+### Commands (once set up)
+```bash
+npm run test        # Run all tests
+npm run test:watch  # Watch mode during development
+```
+
 ## Claude behavior
 
 - **Ask before acting**: When a request is ambiguous or could be interpreted multiple ways, ask a clarifying question before writing any code or making changes.
