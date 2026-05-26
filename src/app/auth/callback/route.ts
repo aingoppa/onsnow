@@ -23,6 +23,6 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  // Redirect to home after successful sign-in
-  return NextResponse.redirect(`${origin}/`)
+  // Redirect to profile after sign-in — profile page will redirect to /profile/edit if no profile exists yet
+  return NextResponse.redirect(`${origin}/profile`)
 }

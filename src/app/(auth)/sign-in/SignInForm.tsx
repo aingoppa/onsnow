@@ -27,7 +27,7 @@ export default function SignInForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleEmailSignIn(e: React.FormEvent) {
+  async function handleEmailSignIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setLoading(true)
@@ -40,8 +40,8 @@ export default function SignInForm() {
       return
     }
 
-    // Redirect to home on success — router.refresh() syncs the server session
-    router.push('/')
+    // Redirect to profile on success — profile page redirects to /profile/edit if no profile yet
+    router.push('/profile')
     router.refresh()
   }
 

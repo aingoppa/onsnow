@@ -25,7 +25,7 @@ export default function SignUpForm() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  async function handleEmailSignUp(e: React.FormEvent) {
+  async function handleEmailSignUp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
 
