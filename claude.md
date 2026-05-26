@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # onsnow
 
 A SaaS web application that connects snow sports enthusiasts — skiers, snowboarders, snowshoers, and more — so they can find partners to ride with, coordinate carpooling, and combine purchases like group lift ticket discounts.
@@ -39,6 +43,32 @@ npm run build     # Production build
 npm run lint      # Run ESLint
 npm run typecheck # Run tsc --noEmit
 ```
+
+## Architecture patterns
+
+### Route groups
+- `src/app/(auth)/` — public pages (sign-in, sign-up). No auth required.
+- `src/app/(app)/` — protected pages (profile, future features). Middleware redirects unauthenticated users to `/sign-in`.
+- `src/app/auth/callback/route.ts` — OAuth exchange handler. Must be registered as a redirect URI in both Google Cloud Console and Supabase.
+
+### Server vs Client component pattern
+Pages are Server Components by default. Interactive pieces are extracted into a co-located Client Component:
+```
+page.tsx          ← Server Component: fetches data, passes as props
+└── SomeForm.tsx  ← 'use client': handles input state, calls Supabase browser client
+```
+Never fetch data in Client Components — pass it down from the Server Component.
+
+### Supabase client usage
+Two clients exist for a reason — using the wrong one causes auth bugs:
+- `src/lib/supabase/server.ts` — use in Server Components and Route Handlers. Reads session from cookies. Async: `await createServerClient()`.
+- `src/lib/supabase/browser.ts` — use in `'use client'` components only. Singleton: `getBrowserClient()`. Used for form submissions, auth state changes.
+
+### Session management
+`src/middleware.ts` runs on every request and refreshes the Supabase session cookie. Without it, users get silently logged out. It also enforces route protection via `PUBLIC_ROUTES`. **Note:** Next.js 16 deprecated `middleware.ts` in favour of `proxy.ts` — this is a known warning, not yet fixed.
+
+### Profile creation flow
+Supabase creates `auth.users` on sign-up automatically. The app creates the `profiles` row manually after the user fills the edit form (`/profile/edit`). The profile page redirects to `/profile/edit` if no profile row exists yet.
 
 ## Code Conventions
 
@@ -197,5 +227,5 @@ npm run test:watch  # Watch mode during development
 
 ## Repository
 
-- Remote GitHub: https://github.com/aingoppa/onsnow
-- Sync notes: this workspace will be pushed to the repository above. Ensure `.gitignore` excludes `node_modules`, `.env*`, and local IDE files. Use a clear default branch name (e.g., `main`) and small, focused commits. Consider adding a CONTRIBUTING.md with branch and PR guidelines when ready.
+- Remote: https://github.com/aingoppa/onsnow
+- Deployed: https://onsnow.vercel.app (auto-deploys on push to `main`)
