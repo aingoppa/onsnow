@@ -19,6 +19,7 @@ A SaaS web application that connects snow sports enthusiasts — skiers, snowboa
 
 ```
 src/
+├── proxy.ts                # Request proxy: session refresh + auth route protection
 ├── app/                    # Next.js App Router pages & layouts
 │   ├── (auth)/             # Public auth pages (sign-in, sign-up)
 │   ├── api/                # Route Handlers
@@ -48,7 +49,7 @@ npm run typecheck # Run tsc --noEmit
 
 ### Route groups
 - `src/app/(auth)/` — public pages (sign-in, sign-up). No auth required.
-- `src/app/(app)/` — protected pages (profile, future features). Middleware redirects unauthenticated users to `/sign-in`.
+- `src/app/(app)/` — protected pages (profile, future features). Proxy (`src/proxy.ts`) redirects unauthenticated users to `/sign-in`.
 - `src/app/auth/callback/route.ts` — OAuth exchange handler. Must be registered as a redirect URI in both Google Cloud Console and Supabase.
 
 ### Server vs Client component pattern
@@ -75,6 +76,7 @@ Supabase creates `auth.users` on sign-up automatically. The app creates the `pro
 
 ## Code Conventions
 
+- **Path alias**: `@/` maps to `src/` — use `@/lib/...`, `@/components/...` etc.
 - **TypeScript**: Strict mode, no `any`. Define types in `src/lib/types/`.
 - **Components**: PascalCase filenames. Co-locate `Component.module.scss` alongside `Component.tsx`.
 - **Server vs Client**: Default to React Server Components. Add `'use client'` only when interactivity or browser APIs are required.
@@ -182,26 +184,7 @@ The primary product feature. A user triggers a beacon at a ski resort lift or fa
 
 ## Testing
 
-Testing is not yet set up — this section documents the agreed approach for when we add it.
-
-### Framework
-- **Vitest** — unit and integration tests (preferred over Jest for this stack)
-- **@testing-library/react** — React component tests in isolation
-
-### What to test
-- **Unit tests**: input validation logic, data mapping, utility functions
-- **Integration tests**: Supabase queries (insert, upsert, RLS enforcement)
-- **Skip for now**: end-to-end browser tests (Playwright) — too heavy for early stage
-
-### Integration test strategy
-- Use a separate **Supabase test project** (free tier) so tests never touch real user data
-- Add test project credentials to `.env.test.local` (gitignored)
-
-### What NOT to test
-- Supabase Auth itself — it's a third-party service, not our code
-- Next.js routing and middleware — framework responsibility
-
-Testing is not yet set up (Vitest + @testing-library/react planned). No test commands exist yet.
+Testing is not yet set up. Plan: Vitest + @testing-library/react. No test commands exist yet.
 
 ## Claude behavior
 
