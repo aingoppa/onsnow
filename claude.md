@@ -20,14 +20,13 @@ A SaaS web application that connects snow sports enthusiasts — skiers, snowboa
 ```
 src/
 ├── app/                    # Next.js App Router pages & layouts
-│   ├── (auth)/             # Auth-gated route group
+│   ├── (auth)/             # Public auth pages (sign-in, sign-up)
 │   ├── api/                # Route Handlers
 │   └── layout.tsx          # Root layout
 ├── components/             # Reusable React components
 │   └── ui/                 # Generic UI primitives
 ├── lib/                    # Shared utilities and helpers
 │   ├── supabase/           # Supabase client instances (server + browser)
-│   │   └── profile.ts      # Server-side profile query helpers
 │   └── types/              # Shared TypeScript types/interfaces
 └── styles/                 # Global styles
     ├── globals.scss         # Global resets and base styles
@@ -71,6 +70,9 @@ Two clients exist for a reason — using the wrong one causes auth bugs:
 ### Profile creation flow
 Supabase creates `auth.users` on sign-up automatically. The app creates the `profiles` row manually after the user fills the edit form (`/profile/edit`). The profile page redirects to `/profile/edit` if no profile row exists yet.
 
+### Photo upload (api.market)
+`POST /api/photo/upload` forwards the file to api.market and saves `photo_url` + `photo_uploaded_at` to the profiles table. api.market deletes images after 7 days — expiry is computed from `photo_uploaded_at` at render time, not stored. `ProfileUpdate` intentionally omits these fields so the edit form upsert never overwrites them.
+
 ## Code Conventions
 
 - **TypeScript**: Strict mode, no `any`. Define types in `src/lib/types/`.
@@ -102,6 +104,7 @@ Add to `.env.local` and Vercel project settings:
 NEXT_PUBLIC_SUPABASE_URL=        # project URL — safe to expose to browser
 NEXT_PUBLIC_SUPABASE_ANON_KEY=   # public anon key — safe to expose to browser
 SUPABASE_SERVICE_ROLE_KEY=       # secret — server-side only, never use NEXT_PUBLIC_
+MAGICAPI_KEY=                    # api.market key — server-side only
 ```
 
 ## Styling
@@ -111,15 +114,6 @@ SUPABASE_SERVICE_ROLE_KEY=       # secret — server-side only, never use NEXT_P
 - SCSS variables (colors, spacing, breakpoints) in `src/styles/_variables.scss`.
 - No inline styles except for truly dynamic runtime values.
 - No Tailwind or CSS-in-JS — plain SCSS only.
-
-## Project purpose & scope
-
-- Onsnow connects snow-sports enthusiasts (skiing, snowboarding, snowshoeing, etc.) so they can find partners to ride with, coordinate car-pooling, and combine purchases like lift tickets or group discounts. Typical flows include creating or joining rides/events, assigning car-pool seats, matching by skill level and schedule, and in-app invites/messages.
-
-## Platform roadmap
-
-- This repository will focus on building the web service first: a Next.js + TypeScript web app and backend APIs (server-rendered and route handlers) powering the core features (profiles, rides/events, matching, messaging, and payment/discount flows).
-- Mobile apps for Android and iOS are planned for a later phase and are out of scope for this repository. Design the API and data model with mobile clients in mind (API-first, clear versioning, and authentication tokens) to ease future mobile integration.
 
 ## Coding style preferences
 
@@ -207,11 +201,7 @@ Testing is not yet set up — this section documents the agreed approach for whe
 - Supabase Auth itself — it's a third-party service, not our code
 - Next.js routing and middleware — framework responsibility
 
-### Commands (once set up)
-```bash
-npm run test        # Run all tests
-npm run test:watch  # Watch mode during development
-```
+Testing is not yet set up (Vitest + @testing-library/react planned). No test commands exist yet.
 
 ## Claude behavior
 
