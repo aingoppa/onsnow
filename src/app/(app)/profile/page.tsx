@@ -33,9 +33,20 @@ export default async function ProfilePage() {
   // New user — no profile yet, send them to the edit form to complete setup
   if (!profile) redirect('/profile/edit')
 
+  // api.market deletes images after 7 days — only show the photo within that window
+  const PHOTO_TTL_MS = 7 * 24 * 60 * 60 * 1000
+  const photoValid =
+    profile.photo_url !== null &&
+    profile.photo_uploaded_at !== null &&
+    Date.now() - new Date(profile.photo_uploaded_at).getTime() < PHOTO_TTL_MS
+
   return (
     <main>
       <h1>My Profile</h1>
+
+      {photoValid && (
+        <img src={profile.photo_url!} alt="Profile photo" width={120} height={120} />
+      )}
 
       <p><strong>Account:</strong> {(await supabase.auth.getUser()).data.user?.email}</p>
       <p><strong>Name:</strong> {profile.name}</p>

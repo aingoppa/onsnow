@@ -10,7 +10,7 @@
  *   profile — existing profile data (null if the user has no profile yet)
  */
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getBrowserClient } from '@/lib/supabase/browser'
 import type { Profile, ProfileUpdate, Gender, Country } from '@/lib/types/profile'
@@ -38,6 +38,96 @@ export default function EditProfileForm({ profile }: Props) {
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // Photo upload state — managed independently from the main profile form
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoLoading, setPhotoLoading] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(profile?.photo_url ?? null)
+
+  // Webcam state
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [cameraActive, setCameraActive] = useState(false)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  // Local preview URL for a just-captured or just-selected image (not yet uploaded)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  // Attach the camera stream to the video element once the element is in the DOM
+  useEffect(() => {
+    if (cameraActive && videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream
+    }
+  }, [cameraActive, cameraStream])
+
+  // Stop all camera tracks when the component unmounts to release the hardware
+  useEffect(() => {
+    return () => { cameraStream?.getTracks().forEach((t) => t.stop()) }
+  }, [cameraStream])
+
+  async function startCamera() {
+    setPhotoError(null)
+    try {
+      // facingMode 'user' selects the front (selfie) camera on phones
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      setCameraStream(stream)
+      setCameraActive(true)
+    } catch {
+      setPhotoError('Camera access denied or not available.')
+    }
+  }
+
+  function stopCamera() {
+    cameraStream?.getTracks().forEach((t) => t.stop())
+    setCameraStream(null)
+    setCameraActive(false)
+  }
+
+  function capturePhoto() {
+    if (!videoRef.current || !canvasRef.current) return
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d')!.drawImage(video, 0, 0)
+
+    // Convert canvas snapshot to a File for upload
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' })
+      setPhotoFile(file)
+      setPreviewUrl(URL.createObjectURL(blob))
+    }, 'image/jpeg', 0.9)
+
+    stopCamera()
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null
+    setPhotoFile(file)
+    setPreviewUrl(file ? URL.createObjectURL(file) : null)
+  }
+
+  async function handlePhotoUpload() {
+    if (!photoFile) return
+    setPhotoLoading(true)
+    setPhotoError(null)
+
+    const formData = new FormData()
+    formData.append('file', photoFile)
+
+    const res = await fetch('/api/photo/upload', { method: 'POST', body: formData })
+    const json = await res.json() as { url?: string; error?: string }
+
+    if (!res.ok || json.error) {
+      setPhotoError(json.error ?? 'Upload failed.')
+    } else {
+      setPhotoUrl(json.url!)
+      setPhotoFile(null)
+      setPreviewUrl(null)
+    }
+    setPhotoLoading(false)
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -197,6 +287,57 @@ export default function EditProfileForm({ profile }: Props) {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
+      </div>
+
+      <div>
+        <label>Profile photo</label>
+
+        {/* Live webcam feed — shown while camera is active */}
+        {cameraActive && (
+          <div>
+            <video ref={videoRef} autoPlay playsInline width={240} />
+            <br />
+            <button type="button" onClick={capturePhoto}>Capture</button>
+            <button type="button" onClick={stopCamera}>Cancel</button>
+          </div>
+        )}
+
+        {/* Hidden canvas used to grab a frame from the video stream */}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+        {/* Preview of selected file or captured snapshot, before uploading */}
+        {previewUrl && !cameraActive && (
+          <img src={previewUrl} alt="Photo preview" width={80} height={80} />
+        )}
+
+        {/* Saved photo (already uploaded) */}
+        {photoUrl && !previewUrl && !cameraActive && (
+          <img src={photoUrl} alt="Current profile photo" width={80} height={80} />
+        )}
+
+        {!cameraActive && (
+          <div>
+            {/* File picker — on mobile this also offers "Take photo" via the OS */}
+            <input
+              id="photo"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            {/* Webcam button for desktop — uses getUserMedia directly */}
+            <button type="button" onClick={startCamera}>Use webcam</button>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={handlePhotoUpload}
+          disabled={!photoFile || photoLoading || cameraActive}
+        >
+          {photoLoading ? 'Uploading…' : 'Upload photo'}
+        </button>
+
+        {photoError && <p role="alert">{photoError}</p>}
       </div>
 
       {error && <p role="alert">{error}</p>}

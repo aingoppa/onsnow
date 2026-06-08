@@ -8,7 +8,7 @@ A SaaS web application that connects snow sports enthusiasts — skiers, snowboa
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript (strict mode)
 - **Styling**: SCSS with CSS Modules (`.module.scss` per component)
 - **Database**: Supabase (PostgreSQL) via `@supabase/supabase-js` — no Prisma or separate ORM
@@ -27,6 +27,7 @@ src/
 │   └── ui/                 # Generic UI primitives
 ├── lib/                    # Shared utilities and helpers
 │   ├── supabase/           # Supabase client instances (server + browser)
+│   │   └── profile.ts      # Server-side profile query helpers
 │   └── types/              # Shared TypeScript types/interfaces
 └── styles/                 # Global styles
     ├── globals.scss         # Global resets and base styles
@@ -65,7 +66,7 @@ Two clients exist for a reason — using the wrong one causes auth bugs:
 - `src/lib/supabase/browser.ts` — use in `'use client'` components only. Singleton: `getBrowserClient()`. Used for form submissions, auth state changes.
 
 ### Session management
-`src/middleware.ts` runs on every request and refreshes the Supabase session cookie. Without it, users get silently logged out. It also enforces route protection via `PUBLIC_ROUTES`. **Note:** Next.js 16 deprecated `middleware.ts` in favour of `proxy.ts` — this is a known warning, not yet fixed.
+`src/proxy.ts` runs on every request and refreshes the Supabase session cookie. Without it, users get silently logged out. It also enforces route protection via `PUBLIC_ROUTES`.
 
 ### Profile creation flow
 Supabase creates `auth.users` on sign-up automatically. The app creates the `profiles` row manually after the user fills the edit form (`/profile/edit`). The profile page redirects to `/profile/edit` if no profile row exists yet.

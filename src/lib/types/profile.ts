@@ -22,12 +22,15 @@ export interface Profile {
   state: string
   country: Country
   phone: string | null
+  photo_url: string | null        // CDN URL from api.market; expires after 7 days
+  photo_uploaded_at: string | null // ISO timestamp — used to compute expiry
   created_at: string   // ISO timestamp string
   updated_at: string
 }
 
 /**
  * The fields the user submits when creating or updating their profile.
- * Omits id, created_at, updated_at — those are set by the database.
+ * Omits id, created_at, updated_at (set by DB) and photo fields (managed
+ * separately via /api/photo/upload).
  */
-export type ProfileUpdate = Omit<Profile, 'id' | 'created_at' | 'updated_at'>
+export type ProfileUpdate = Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'photo_url' | 'photo_uploaded_at'>

@@ -1,5 +1,5 @@
 /**
- * Next.js middleware — runs on every request before the page renders.
+ * Next.js proxy — runs on every request before the page renders.
  *
  * Its main job here is to refresh the Supabase session cookie so it doesn't
  * expire while the user is active. Without this, users get logged out
@@ -9,7 +9,7 @@
  * unauthenticated users to the sign-in page.
  *
  * Note: We create a Supabase client directly here (not via server.ts) because
- * middleware uses NextRequest/NextResponse, which have a different cookie API
+ * proxy uses NextRequest/NextResponse, which have a different cookie API
  * than Server Components.
  */
 
@@ -23,7 +23,7 @@ function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`))
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // We need to pass the request into the response so cookies are forwarded correctly
   let supabaseResponse = NextResponse.next({ request })
 
@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh the session — this is the main purpose of the middleware
+  // Refresh the session — this is the main purpose of the proxy
   const { data: { user } } = await supabase.auth.getUser()
 
   // Redirect unauthenticated users away from protected routes
@@ -61,6 +61,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run middleware on all routes except Next.js internals and static files
+  // Run proxy on all routes except Next.js internals and static files
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
