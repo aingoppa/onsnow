@@ -22,13 +22,16 @@ src/
 ├── proxy.ts                # Request proxy: session refresh + auth route protection
 ├── app/                    # Next.js App Router pages & layouts
 │   ├── (auth)/             # Public auth pages (sign-in, sign-up)
+│   ├── (app)/              # Protected pages (proxy enforces auth)
+│   │   ├── action/         # Play Together rooms (/action)
+│   │   └── profile/        # User profile + edit
 │   ├── api/                # Route Handlers
 │   └── layout.tsx          # Root layout
 ├── components/             # Reusable React components
 │   └── ui/                 # Generic UI primitives
 ├── lib/                    # Shared utilities and helpers
 │   ├── supabase/           # Supabase client instances (server + browser)
-│   └── types/              # Shared TypeScript types/interfaces
+│   └── types/              # Shared TypeScript types (profile.ts, room.ts)
 └── styles/                 # Global styles
     ├── globals.scss         # Global resets and base styles
     └── _variables.scss      # SCSS variables and mixins
@@ -91,6 +94,7 @@ Supabase creates `auth.users` on sign-up automatically. The app creates the `pro
 - **Client files**: `src/lib/supabase/server.ts` (Server Components / Route Handlers) and `src/lib/supabase/browser.ts` (client components).
 - Use the **server client** for all data access in Server Components and API routes — it runs with elevated privileges via the service role key.
 - Use the **browser client** only for auth state listeners in client components.
+- **Profiles RLS**: any authenticated user can read any profile row (required for showing names/photos in the rooms feature). Write policies remain user-scoped.
 - Schema changes go in `supabase/migrations/` as SQL files, or via the Supabase dashboard SQL editor.
 - Supabase can auto-generate TypeScript types from your schema: `npx supabase gen types typescript`.
 
@@ -130,18 +134,14 @@ MAGICAPI_KEY=                    # api.market key — server-side only
 
 ## Core features
 
-### Play together (beacon)
-The primary product feature. A user triggers a beacon at a ski resort lift or facility. Matched users are notified with the beacon creator's profile, location, and a custom message (e.g. "I'm wearing a blue jacket, meet me at Chair 6 until 11am").
+### Play together — `/action`
+**Status: implemented (MVP).** Users create a room with a message, meeting location, trail level, and expiry time. Other users can see open rooms, join/leave them, and see who else has joined (name + photo).
 
-**Matching criteria (MVP):** same resort + same day + overlapping sport type + compatible skill level + preferred lift
+**Tables:** `rooms` (one active room per creator), `room_joins` (unique per user/room). Both have RLS — anyone authenticated can read; only the creator can delete a room; only the joining user can insert/delete their own join.
 
-**Out of scope for now:** "Trip together" (carpooling coordination), GPS/pin location, trail preferences
+**Files:** `src/app/(app)/action/` — `page.tsx` (Server Component, fetches all data), `CreateRoomForm.tsx` (create or view/delete own room), `RoomList.tsx` (join/leave + displays names and photos).
 
-#### Beacon flow
-1. User selects resort, landmark (lift or facility), date/time window, and writes a message
-2. System finds users with matching criteria who are at the same resort that day
-3. Matched users receive a notification with the beacon details
-4. Beacon auto-expires at the user-specified time
+**Not yet:** resort/landmark selector (free-text for now), matching by skill level, push notifications.
 
 ### Profile skill level
 - Add `skill_level` (enum: Beginner, Intermediate, Advanced, Expert) to the `profiles` table
