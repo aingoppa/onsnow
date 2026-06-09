@@ -31,12 +31,12 @@ export default async function ActionPage() {
     .gt('expires_at', now)
     .maybeSingle<Room>()
 
-  // All active rooms with creator name and joiner names in one query.
-  // profiles!creator_id(name) — follows the creator_id FK to profiles.
-  // room_joins(user_id, profiles!user_id(name)) — each join row + the joiner's profile name.
+  // All active rooms with creator and joiner profiles (name + photo).
+  // profiles!creator_id — follows the creator_id FK to profiles.
+  // room_joins → profiles!user_id — each joiner's profile.
   const { data: rawRooms } = await supabase
     .from('rooms')
-    .select('*, profiles!creator_id(name), room_joins(user_id, profiles!user_id(name))')
+    .select('*, profiles!creator_id(name, photo_url, photo_uploaded_at), room_joins(user_id, profiles!user_id(name, photo_url, photo_uploaded_at))')
     .gt('expires_at', now)
     .order('created_at', { ascending: false })
 
@@ -48,18 +48,31 @@ export default async function ActionPage() {
 
   const joinedRoomIds = new Set((userJoins ?? []).map((j) => j.room_id as string))
 
-  // Merge creator name, joiner list, and user state into each room
+  // Photos from api.market expire after 7 days — resolve to null if expired
+  const PHOTO_TTL_MS = 7 * 24 * 60 * 60 * 1000
+  function resolvePhoto(url: string | null, uploadedAt: string | null): string | null {
+    if (!url || !uploadedAt) return null
+    return Date.now() - new Date(uploadedAt).getTime() < PHOTO_TTL_MS ? url : null
+  }
+
+  type RawProfile = { name: string; photo_url: string | null; photo_uploaded_at: string | null } | null
+
+  // Merge creator name/photo, joiner list, and user state into each room
   const rooms: RoomWithMeta[] = (rawRooms ?? []).map((r) => {
-    const rawJoins = r.room_joins as { user_id: string; profiles: { name: string } | null }[]
+    const creatorProfile = r.profiles as RawProfile
+    const rawJoins = r.room_joins as { user_id: string; profiles: RawProfile }[]
+
     const joiners: Joiner[] = rawJoins.map((j) => ({
       user_id: j.user_id,
       name: j.profiles?.name ?? 'Unknown',
+      photo_url: resolvePhoto(j.profiles?.photo_url ?? null, j.profiles?.photo_uploaded_at ?? null),
     }))
 
     return {
       id: r.id as string,
       creator_id: r.creator_id as string,
-      creator_name: (r.profiles as { name: string } | null)?.name ?? 'Unknown',
+      creator_name: creatorProfile?.name ?? 'Unknown',
+      creator_photo_url: resolvePhoto(creatorProfile?.photo_url ?? null, creatorProfile?.photo_uploaded_at ?? null),
       message: r.message as string,
       meeting_location: r.meeting_location as string,
       trail_level: r.trail_level,

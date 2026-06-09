@@ -25,11 +25,13 @@ export type RoomInsert = Omit<Room, 'id' | 'created_at' | 'creator_id'>
 export interface Joiner {
   user_id: string
   name: string
+  photo_url: string | null   // null if no photo or photo has expired
 }
 
 /** Room row augmented with creator name, joiners, and current-user state */
 export interface RoomWithMeta extends Room {
   creator_name: string
+  creator_photo_url: string | null  // null if no photo or photo has expired
   joiners: Joiner[]    // profiles of users who have joined
   join_count: number   // derived from joiners.length
   is_joined: boolean   // whether the current user has joined this room

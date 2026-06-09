@@ -101,14 +101,32 @@ export default function RoomList({ rooms, userId }: Props) {
         return (
           <div key={room.id}>
             <p><strong>{room.message}</strong></p>
-            <p>By: {room.creator_name}</p>
+            <p>
+              By:{' '}
+              {room.creator_photo_url && (
+                <img src={room.creator_photo_url} alt={room.creator_name} width={24} height={24} />
+              )}
+              {room.creator_name}
+            </p>
             <p>Location: {room.meeting_location}</p>
             <p>Trail level: {room.trail_level}</p>
             <p>Expires: {new Date(room.expires_at).toLocaleString()}</p>
             <p>
               Riders interested: {room.join_count}
               {room.joiners.length > 0 && (
-                <> ({room.joiners.map((j) => j.name).join(', ')})</>
+                <>
+                  {' '}(
+                  {room.joiners.map((j, i) => (
+                    <span key={j.user_id}>
+                      {i > 0 && ', '}
+                      {j.photo_url && (
+                        <img src={j.photo_url} alt={j.name} width={24} height={24} />
+                      )}
+                      {j.name}
+                    </span>
+                  ))}
+                  )
+                </>
               )}
             </p>
 
