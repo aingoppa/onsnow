@@ -21,9 +21,17 @@ export interface Room {
 /** Fields submitted when creating a room — id, creator_id, and created_at are set by the DB */
 export type RoomInsert = Omit<Room, 'id' | 'created_at' | 'creator_id'>
 
-/** Room row augmented with join count and current-user join state, used in the list view */
+/** A joiner's identity as returned from the room_joins → profiles join */
+export interface Joiner {
+  user_id: string
+  name: string
+}
+
+/** Room row augmented with creator name, joiners, and current-user state */
 export interface RoomWithMeta extends Room {
-  join_count: number
+  creator_name: string
+  joiners: Joiner[]    // profiles of users who have joined
+  join_count: number   // derived from joiners.length
   is_joined: boolean   // whether the current user has joined this room
   is_own: boolean      // whether the current user created this room
 }

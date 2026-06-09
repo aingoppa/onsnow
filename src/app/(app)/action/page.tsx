@@ -7,7 +7,7 @@
 
 import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import type { Room, RoomWithMeta } from '@/lib/types/room'
+import type { Room, RoomWithMeta, Joiner } from '@/lib/types/room'
 import CreateRoomForm from './CreateRoomForm'
 import RoomList from './RoomList'
 
@@ -31,10 +31,12 @@ export default async function ActionPage() {
     .gt('expires_at', now)
     .maybeSingle<Room>()
 
-  // All active rooms with their join counts
+  // All active rooms with creator name and joiner names in one query.
+  // profiles!creator_id(name) — follows the creator_id FK to profiles.
+  // room_joins(user_id, profiles!user_id(name)) — each join row + the joiner's profile name.
   const { data: rawRooms } = await supabase
     .from('rooms')
-    .select('*, room_joins(count)')
+    .select('*, profiles!creator_id(name), room_joins(user_id, profiles!user_id(name))')
     .gt('expires_at', now)
     .order('created_at', { ascending: false })
 
@@ -46,20 +48,29 @@ export default async function ActionPage() {
 
   const joinedRoomIds = new Set((userJoins ?? []).map((j) => j.room_id as string))
 
-  // Merge join count and user state into each room
-  const rooms: RoomWithMeta[] = (rawRooms ?? []).map((r) => ({
-    id: r.id as string,
-    creator_id: r.creator_id as string,
-    message: r.message as string,
-    meeting_location: r.meeting_location as string,
-    trail_level: r.trail_level,
-    expires_at: r.expires_at as string,
-    created_at: r.created_at as string,
-    // Supabase returns counts as [{ count: N }]
-    join_count: (r.room_joins as { count: number }[])[0]?.count ?? 0,
-    is_joined: joinedRoomIds.has(r.id as string),
-    is_own: r.creator_id === user.id,
-  }))
+  // Merge creator name, joiner list, and user state into each room
+  const rooms: RoomWithMeta[] = (rawRooms ?? []).map((r) => {
+    const rawJoins = r.room_joins as { user_id: string; profiles: { name: string } | null }[]
+    const joiners: Joiner[] = rawJoins.map((j) => ({
+      user_id: j.user_id,
+      name: j.profiles?.name ?? 'Unknown',
+    }))
+
+    return {
+      id: r.id as string,
+      creator_id: r.creator_id as string,
+      creator_name: (r.profiles as { name: string } | null)?.name ?? 'Unknown',
+      message: r.message as string,
+      meeting_location: r.meeting_location as string,
+      trail_level: r.trail_level,
+      expires_at: r.expires_at as string,
+      created_at: r.created_at as string,
+      joiners,
+      join_count: joiners.length,
+      is_joined: joinedRoomIds.has(r.id as string),
+      is_own: r.creator_id === user.id,
+    }
+  })
 
   return (
     <main>

@@ -101,10 +101,16 @@ export default function RoomList({ rooms, userId }: Props) {
         return (
           <div key={room.id}>
             <p><strong>{room.message}</strong></p>
+            <p>By: {room.creator_name}</p>
             <p>Location: {room.meeting_location}</p>
             <p>Trail level: {room.trail_level}</p>
             <p>Expires: {new Date(room.expires_at).toLocaleString()}</p>
-            <p>Riders interested: {room.join_count}</p>
+            <p>
+              Riders interested: {room.join_count}
+              {room.joiners.length > 0 && (
+                <> ({room.joiners.map((j) => j.name).join(', ')})</>
+              )}
+            </p>
 
             {/* Creator sees their own room with a delete button */}
             {room.is_own && (
