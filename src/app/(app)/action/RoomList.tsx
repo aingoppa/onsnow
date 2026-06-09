@@ -48,6 +48,25 @@ export default function RoomList({ rooms, userId }: Props) {
     router.refresh()
   }
 
+  async function handleDelete(roomId: string) {
+    setError(null)
+    setLoadingRoomId(roomId)
+
+    const { error: dbError } = await supabase
+      .from('rooms')
+      .delete()
+      .eq('id', roomId)
+
+    setLoadingRoomId(null)
+
+    if (dbError) {
+      setError(dbError.message)
+      return
+    }
+
+    router.refresh()
+  }
+
   async function handleLeave(roomId: string) {
     setError(null)
     setLoadingRoomId(roomId)
@@ -87,8 +106,19 @@ export default function RoomList({ rooms, userId }: Props) {
             <p>Expires: {new Date(room.expires_at).toLocaleString()}</p>
             <p>Riders interested: {room.join_count}</p>
 
-            {/* Creator sees their own room but can't join it */}
-            {room.is_own && <p><em>(Your room)</em></p>}
+            {/* Creator sees their own room with a delete button */}
+            {room.is_own && (
+              <div>
+                <em>(Your room)</em>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(room.id)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Deleting…' : 'Delete room'}
+                </button>
+              </div>
+            )}
 
             {!room.is_own && (
               room.is_joined ? (
