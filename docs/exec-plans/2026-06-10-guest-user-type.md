@@ -21,5 +21,6 @@ Drop `city`, `state`, `country`; make `birth_year` nullable.
 - `src/app/(app)/profile/page.tsx`
 - `src/app/(app)/profile/SaveAccountBanner.tsx` (new)
 
-## Manual step
-Enable Anonymous Sign-in in Supabase dashboard: Authentication → Sign In Methods → Anonymous.
+## Manual steps — completed 2026-06-10
+- [x] Enable Anonymous Sign-in in Supabase dashboard
+- [x] Run `20260610_simplify_profiles.sql` migration (drop city/state/country, birth_year nullable)
