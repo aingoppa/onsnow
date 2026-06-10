@@ -45,6 +45,23 @@ export default function SignInForm() {
     router.refresh()
   }
 
+  async function handleGuestSignIn() {
+    setError(null)
+    setLoading(true)
+
+    const { error } = await supabase.auth.signInAnonymously()
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+
+    // Guest has no profile yet — send them straight to setup
+    router.push('/profile/edit')
+    router.refresh()
+  }
+
   async function handleGoogleSignIn() {
     setError(null)
 
@@ -104,6 +121,12 @@ export default function SignInForm() {
       <p>
         Don&apos;t have an account? <Link href="/sign-up">Sign up</Link>
       </p>
+
+      <p>or</p>
+
+      <button type="button" onClick={handleGuestSignIn} disabled={loading}>
+        Continue as guest
+      </button>
     </div>
   )
 }

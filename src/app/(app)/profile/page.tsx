@@ -9,6 +9,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { Profile } from '@/lib/types/profile'
+import SaveAccountBanner from './SaveAccountBanner'
 
 export const metadata = {
   title: 'My Profile — onsnow',
@@ -20,7 +21,7 @@ export default async function ProfilePage() {
   // Get the logged-in user from the session
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Middleware protects this route, but double-check just in case
+  // Proxy protects this route, but double-check just in case
   if (!user) redirect('/sign-in')
 
   // Fetch the profile row for this user
@@ -40,17 +41,25 @@ export default async function ProfilePage() {
     profile.photo_uploaded_at !== null &&
     Date.now() - new Date(profile.photo_uploaded_at).getTime() < PHOTO_TTL_MS
 
+  const isAnonymous = user.is_anonymous ?? false
+
   return (
     <main>
       <h1>My Profile</h1>
+
+      {/* Prompt guest users to save their account before signing out */}
+      {isAnonymous && <SaveAccountBanner />}
 
       {photoValid && (
         <img src={profile.photo_url!} alt="Profile photo" width={120} height={120} />
       )}
 
-      <p><strong>Account:</strong> {(await supabase.auth.getUser()).data.user?.email}</p>
+      <p><strong>Account:</strong> {user.email ?? 'Guest'}</p>
       <p><strong>Name:</strong> {profile.name}</p>
-      <p><strong>Birth year:</strong> {profile.birth_year}</p>
+
+      {profile.birth_year && (
+        <p><strong>Birth year:</strong> {profile.birth_year}</p>
+      )}
 
       {profile.gender && (
         <p>
@@ -58,8 +67,6 @@ export default async function ProfilePage() {
           {profile.gender === 'Custom' ? profile.custom_gender : profile.gender}
         </p>
       )}
-
-      <p><strong>Location:</strong> {profile.city}, {profile.state}, {profile.country}</p>
 
       {profile.phone && (
         <p><strong>Phone:</strong> {profile.phone}</p>

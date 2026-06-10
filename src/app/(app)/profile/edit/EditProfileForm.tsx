@@ -6,6 +6,9 @@
  * Used for both creating a new profile and updating an existing one.
  * Uses Supabase's upsert() which inserts if no row exists, or updates if it does.
  *
+ * Required fields: name + profile photo.
+ * All other fields (birth year, gender, phone) are optional.
+ *
  * Props:
  *   profile — existing profile data (null if the user has no profile yet)
  */
@@ -13,10 +16,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getBrowserClient } from '@/lib/supabase/browser'
-import type { Profile, ProfileUpdate, Gender, Country } from '@/lib/types/profile'
+import type { Profile, ProfileUpdate, Gender } from '@/lib/types/profile'
 
 const GENDER_OPTIONS: Gender[] = ['Male', 'Female', 'Rather not say', 'Custom']
-const COUNTRY_OPTIONS: Country[] = ['US', 'Canada']
 
 interface Props {
   profile: Profile | null
@@ -26,14 +28,10 @@ export default function EditProfileForm({ profile }: Props) {
   const router = useRouter()
   const supabase = getBrowserClient()
 
-  // Pre-fill fields with existing profile values, or empty strings for new users
   const [name, setName] = useState(profile?.name ?? '')
   const [birthYear, setBirthYear] = useState(profile?.birth_year?.toString() ?? '')
   const [gender, setGender] = useState<Gender | ''>(profile?.gender ?? '')
   const [customGender, setCustomGender] = useState(profile?.custom_gender ?? '')
-  const [city, setCity] = useState(profile?.city ?? '')
-  const [state, setState] = useState(profile?.state ?? '')
-  const [country, setCountry] = useState<Country | ''>(profile?.country ?? '')
   const [phone, setPhone] = useState(profile?.phone ?? '')
 
   const [error, setError] = useState<string | null>(null)
@@ -133,9 +131,13 @@ export default function EditProfileForm({ profile }: Props) {
     e.preventDefault()
     setError(null)
 
-    // Basic validation before sending to the database
-    if (!name || !birthYear || !city || !state || !country) {
-      setError('Please fill in all required fields.')
+    if (!name) {
+      setError('Name is required.')
+      return
+    }
+    // Photo is required — either an existing one or one just uploaded
+    if (!photoUrl) {
+      setError('A profile photo is required. Please upload one above.')
       return
     }
     if (gender === 'Custom' && !customGender) {
@@ -143,10 +145,15 @@ export default function EditProfileForm({ profile }: Props) {
       return
     }
 
-    const year = parseInt(birthYear, 10)
-    if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-      setError('Please enter a valid birth year.')
-      return
+    // Validate birth year only if provided
+    let parsedBirthYear: number | null = null
+    if (birthYear) {
+      const year = parseInt(birthYear, 10)
+      if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
+        setError('Please enter a valid birth year.')
+        return
+      }
+      parsedBirthYear = year
     }
 
     setLoading(true)
@@ -161,13 +168,10 @@ export default function EditProfileForm({ profile }: Props) {
 
     const updates: ProfileUpdate = {
       name,
-      birth_year: year,
+      birth_year: parsedBirthYear,
       gender: gender || null,
       // Only save custom_gender if gender is Custom
       custom_gender: gender === 'Custom' ? customGender : null,
-      city,
-      state,
-      country: country as Country,
       phone: phone || null,
     }
 
@@ -201,7 +205,7 @@ export default function EditProfileForm({ profile }: Props) {
       </div>
 
       <div>
-        <label htmlFor="birthYear">Birth year *</label>
+        <label htmlFor="birthYear">Birth year</label>
         <input
           id="birthYear"
           type="number"
@@ -209,7 +213,6 @@ export default function EditProfileForm({ profile }: Props) {
           onChange={(e) => setBirthYear(e.target.value)}
           min={1900}
           max={new Date().getFullYear()}
-          required
         />
       </div>
 
@@ -243,43 +246,6 @@ export default function EditProfileForm({ profile }: Props) {
       )}
 
       <div>
-        <label htmlFor="country">Country *</label>
-        <select
-          id="country"
-          value={country}
-          onChange={(e) => setCountry(e.target.value as Country | '')}
-          required
-        >
-          <option value="">Select country</option>
-          {COUNTRY_OPTIONS.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="state">State / Province *</label>
-        <input
-          id="state"
-          type="text"
-          value={state}
-          onChange={(e) => setState(e.target.value)}
-          required
-        />
-      </div>
-
-      <div>
-        <label htmlFor="city">City *</label>
-        <input
-          id="city"
-          type="text"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          required
-        />
-      </div>
-
-      <div>
         <label htmlFor="phone">Phone</label>
         <input
           id="phone"
@@ -290,7 +256,7 @@ export default function EditProfileForm({ profile }: Props) {
       </div>
 
       <div>
-        <label>Profile photo</label>
+        <label>Profile photo *</label>
 
         {/* Live webcam feed — shown while camera is active */}
         {cameraActive && (
