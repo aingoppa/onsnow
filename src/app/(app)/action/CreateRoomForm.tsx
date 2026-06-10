@@ -19,6 +19,12 @@ import type { Room, RoomInsert, TrailLevel } from '@/lib/types/room'
 
 const TRAIL_LEVELS: TrailLevel[] = ['Beginner', 'Intermediate', 'Advanced', 'Expert']
 
+// datetime-local inputs require "YYYY-MM-DDTHH:MM" in LOCAL time.
+// toISOString() is UTC, so subtract the timezone offset before slicing.
+function toLocalDatetimeString(d: Date): string {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
+
 interface Props {
   userId: string
   userRoom: Room | null
@@ -31,12 +37,10 @@ export default function CreateRoomForm({ userId, userRoom }: Props) {
   const [message, setMessage] = useState('')
   const [meetingLocation, setMeetingLocation] = useState('')
   const [trailLevel, setTrailLevel] = useState<TrailLevel>('Intermediate')
-  // Default expiry: 2 hours from now, formatted for datetime-local input
-  const [expiresAt, setExpiresAt] = useState(() => {
-    const d = new Date(Date.now() + 2 * 60 * 60 * 1000)
-    // datetime-local expects "YYYY-MM-DDTHH:MM"
-    return d.toISOString().slice(0, 16)
-  })
+  // Default expiry: 2 hours from now in local time
+  const [expiresAt, setExpiresAt] = useState(() =>
+    toLocalDatetimeString(new Date(Date.now() + 2 * 60 * 60 * 1000))
+  )
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -155,7 +159,7 @@ export default function CreateRoomForm({ userId, userRoom }: Props) {
             id="expiresAt"
             type="datetime-local"
             value={expiresAt}
-            min={new Date().toISOString().slice(0, 16)}
+            min={toLocalDatetimeString(new Date())}
             onChange={(e) => setExpiresAt(e.target.value)}
             required
           />
