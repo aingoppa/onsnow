@@ -91,18 +91,12 @@ Supabase creates `auth.users` on sign-up automatically. The app creates the `pro
 
 ### Database
 - Query data using the `@supabase/supabase-js` client directly — no Prisma or ORM layer.
-- **Client files**: `src/lib/supabase/server.ts` (Server Components / Route Handlers) and `src/lib/supabase/browser.ts` (client components).
-- Use the **server client** for all data access in Server Components and API routes — it runs with elevated privileges via the service role key.
-- Use the **browser client** only for auth state listeners in client components.
 - **Profiles RLS**: any authenticated user can read any profile row (required for showing names/photos in the rooms feature). Write policies remain user-scoped.
 - Schema changes go in `supabase/migrations/` as SQL files, or via the Supabase dashboard SQL editor.
 - Supabase can auto-generate TypeScript types from your schema: `npx supabase gen types typescript`.
 
 ### Auth
-- Supports **email/password** signup and **Google OAuth (OIDC)** — both configured in the Supabase dashboard under Authentication → Providers.
-- Google sign-in requires a Google Cloud OAuth 2.0 credential; set the Supabase callback URL as an authorized redirect URI in Google Cloud Console.
-- On sign-in, Supabase stores the user in `auth.users` and sets a session cookie automatically.
-- Link a `profiles` table to `auth.users.id` for app-specific data (display name, skill level, avatar, etc.).
+- `src/app/auth/callback/route.ts` must be registered as a redirect URI in both Google Cloud Console and the Supabase dashboard.
 
 ### Environment variables
 Add to `.env.local` and Vercel project settings:
@@ -121,17 +115,6 @@ MAGICAPI_KEY=                    # api.market key — server-side only
 - No inline styles except for truly dynamic runtime values.
 - No Tailwind or CSS-in-JS — plain SCSS only.
 
-## Coding style preferences
-
-- Keep the implementation vanilla and simple: prefer plain React and Node.js without heavy frameworks or unnecessary libraries. Use only well-justified dependencies with clear trade-offs.
-- Write code that is easy to read and learn from: prefer explicit, straightforward implementations over clever one-liners or heavy abstraction.
-- Documentation in-code: every exported class, function, or module should include concise comments explaining intent, inputs, outputs, side-effects, and rationale. Aim for examples where helpful.
-- Learning-oriented notes: include brief inline comments for non-obvious logic to help someone learning React and Node.js understand why a pattern is used.
-- Testing: add small, focused tests for core logic (matching, seat allocation, privacy filters). Keep tests simple and readable.
-- Avoid: complex build-time magic, obscure DSLs, or large UI frameworks. Keep the stack minimal to accelerate learning and maintenance.
-
-- Styling guidance: apply styles only when required — functionality first. It's acceptable for the UI to be plain or "ugly" during development so long as features work; prefer small, explicit styles over extensive design systems.
-
 ## Core features
 
 ### Play together — `/action`
@@ -149,50 +132,15 @@ MAGICAPI_KEY=                    # api.market key — server-side only
 - **Status: not yet implemented — next task**
 
 ### Resort & landmark data
+**Status: not yet implemented.** Planned tables:
+- `resorts`: id, name, state, country, osm_id, center_lat, center_lon, boundary (GeoJSON)
+- `landmarks`: id, resort_id FK, name, type (`lift`/`facility`), subtype, osm_id
 
-#### Schema
-
-**resorts table**
-| Field | Type | Notes |
-|---|---|---|
-| id | uuid | |
-| name | text | e.g. "Whistler Blackcomb" |
-| state | text | State or province |
-| country | text | US or Canada |
-| osm_id | bigint | OSM relation ID |
-| center_lat | float | Resort center point |
-| center_lon | float | Resort center point |
-| boundary | jsonb | GeoJSON polygon from OSM |
-| created_at | timestamptz | |
-
-**landmarks table**
-| Field | Type | Notes |
-|---|---|---|
-| id | uuid | |
-| resort_id | uuid | FK → resorts |
-| name | text | e.g. "Chair 6", "Day Lodge" |
-| type | enum | `lift` or `facility` |
-| subtype | text | `chair_lift`, `gondola`, `drag_lift`, `magic_carpet`, `mixed_lift`, `lodge`, `ticket_booth`, `rental_shop`, `restroom` |
-| osm_id | bigint | OSM element ID |
-| created_at | timestamptz | |
-
-#### OSM seeding
-- Data source: **OpenStreetMap** via the **Overpass API** (free, no API key)
-- OSM tags used: `aerialway=*` for lifts, `amenity=*` / `tourism=*` for facilities
-- A one-time Node.js seeding script queries Overpass for each resort and imports into Supabase
-- **Status: not yet implemented — next task after skill_level**
+Data source: OpenStreetMap via Overpass API (free). One-time Node.js seed script planned.
 
 ## Testing
 
 Testing is not yet set up. Plan: Vitest + @testing-library/react. No test commands exist yet.
-
-## Claude behavior
-
-- **Ask before acting**: When a request is ambiguous or could be interpreted multiple ways, ask a clarifying question before writing any code or making changes.
-- **Explain first**: Before starting a non-trivial task, briefly describe what you are about to do and why — give the user a chance to redirect.
-- **No surprises**: Do not make changes beyond what was explicitly asked. If you notice something related that could also be improved, mention it and ask before touching it.
-- **Small steps**: Prefer making one focused change at a time rather than large sweeping edits. Confirm direction after each meaningful step if the task is complex.
-- **When in doubt, stop and ask** — never guess at intent on decisions that are hard to reverse (schema changes, deleting files, refactoring structure).
 
 ## Security & privacy reminders
 
