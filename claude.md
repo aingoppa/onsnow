@@ -147,6 +147,10 @@ Testing is not yet set up. Plan: Vitest + @testing-library/react. No test comman
 - Treat location and contact information as sensitive: require explicit opt-in, store with minimal precision when possible (e.g., rounded coordinates), and provide short retention periods for meetup-related data unless the user opts in to longer storage.
 - When documenting or requesting code changes via Claude that touch PII, include explicit privacy constraints in the task template.
 
+## Workflow
+
+Before implementing any feature, create `docs/exec-plans/YYYY-MM-DD-slug.md` with the execution plan and commit it alongside the feature code.
+
 ## Repository
 
 - Remote: https://github.com/aingoppa/onsnow
